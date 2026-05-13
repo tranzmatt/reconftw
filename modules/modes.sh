@@ -508,6 +508,13 @@ function end() {
         export_reports || true
     fi
 
+    # Mark clean traversal so the EXIT trap's _cleanup_inprogress sweeps
+    # .inprogress_* sentinels (D-02 clean-exit semantics; CR-01 fix). Any
+    # path that bypasses end() — SIGINT/SIGTERM via cleanup_on_exit, an
+    # internal abort like _abort_disk_full's exit 1, or an unhandled error
+    # — leaves the flag at false and the sentinels survive to drive the
+    # next run's resume banner.
+    _RECON_CLEAN_EXIT=true
 }
 
 function build_hotlist() {
