@@ -760,7 +760,10 @@ process_results() {
         if command -v anew &>/dev/null; then
             count=$(anew "$output" < "$input" 2>/dev/null | sed '/^$/d' | wc -l | tr -d ' ')
         else
-            count=$(cat "$input" >> "$output" && wc -l < "$input" | tr -d ' ')
+            # Fallback: no dedup — append all and count non-empty input lines
+            # (may overcount duplicates already present in output)
+            cat "$input" >> "$output" 2>/dev/null
+            count=$(sed '/^$/d' "$input" | wc -l | tr -d ' ')
         fi
     fi
     
