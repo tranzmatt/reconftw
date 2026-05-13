@@ -95,7 +95,8 @@ verify_sha256() {
     elif command -v shasum >/dev/null 2>&1; then
         actual=$(shasum -a 256 "$file" | awk '{print $1}')
     else
-        return 0  # no hashing tool available; skip (don't block install)
+        printf '[WARN] verify_sha256: no sha256sum or shasum found; skipping integrity check for %s\n' "$file" >&2
+        return 0  # preserve backward compat but warn loudly
     fi
 
     [[ -n "$actual" && "$actual" == "$expected" ]]
