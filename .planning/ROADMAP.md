@@ -52,7 +52,7 @@ Plans:
 
 Plans:
 - [x] 02-01: `safe_count()` eval removal + caller migration to file-path form (SEC-01)
-- [ ] 02-02: `sendToNotify()` quoting refactor + `modules/web.sh:2340` mantra path fix (SEC-02, FIX-01)
+- [x] 02-02: `sendToNotify()` quoting refactor + `modules/web.sh:2340` mantra path fix (SEC-02, FIX-01)
 - [x] 02-03: `AXIOM_EXTRA_ARGS_ARR` array refactor + installer SHA256 verification + tools manifest (SEC-03, SEC-04)
 
 ### Phase 3: Concurrency Caps & Scope Unification
