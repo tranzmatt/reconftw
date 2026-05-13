@@ -77,6 +77,9 @@ function start() {
     fi
     if [[ "${FORCE_RESCAN:-false}" == "true" ]]; then
         rm -f "$called_fn_dir"/.* 2>>"${LOGFILE:-/dev/null}" || true
+        # Explicitly clear .inprogress_* orphans so a --force run never inherits
+        # a fake resume condition regardless of shell dotglob settings (D-05).
+        rm -f "$called_fn_dir"/.inprogress_* 2>>"${LOGFILE:-/dev/null}" || true
     fi
     mkdir -p "$dir"
     cd "$dir" || {
@@ -116,6 +119,7 @@ function start() {
 
     # Trap for cleanup on unexpected exit
     trap 'cleanup_on_exit' INT TERM
+    trap '_cleanup_inprogress' EXIT  # silent EXIT-only sentinel sweep (D-02)
 
     # Initialize structured logging if enabled
     log_init
@@ -154,6 +158,28 @@ function start() {
     if [[ "${FORCE_RESCAN:-false}" == "true" ]]; then
         _print_msg WARN "Force rescan enabled: ignoring cached module markers"
     fi
+
+    # Resume banner (D-04): detect .inprogress_<fn> sentinels left behind by a
+    # prior crashed run and emit exactly ONE WARN line naming the affected
+    # functions. Guarded against unset called_fn_dir and skipped under
+    # FORCE_RESCAN (Step C already wiped any orphans there).
+    if [[ -n "${called_fn_dir:-}" ]] && [[ "${FORCE_RESCAN:-false}" != "true" ]]; then
+        local -a _leftover
+        mapfile -t _leftover < <(ls -1 "${called_fn_dir}"/.inprogress_* 2>/dev/null)
+        if ((${#_leftover[@]} > 0)); then
+            local _prefix="${called_fn_dir}/.inprogress_"
+            local -a _names=()
+            local _f
+            for _f in "${_leftover[@]}"; do
+                _names+=("${_f#"$_prefix"}")
+            done
+            local _joined
+            _joined=$(IFS=,; printf "%s" "${_names[*]}")
+            _print_msg WARN "resume: ${#_leftover[@]} functions re-running after interruption (${_joined})"
+            log_json "WARN" "resume" "Inprogress sentinels found" "reason=inprogress_leftover" "funcs=${_joined}"
+        fi
+    fi
+
     if [[ "${MONITOR_MODE:-false}" == "true" ]] && [[ "${MONITOR_CYCLE:-1}" -gt 1 ]]; then
         notification "Monitor cycle ${MONITOR_CYCLE}: skipping repeated tools check" info
     else

@@ -1425,6 +1425,13 @@ function start_func() {
     printf -v "_start_time_${_fn_name//[^a-zA-Z0-9_]/_}" '%s' "$(date +%s)"
     # Keep global $start for backward compat (serial mode)
     start=$(date +%s)
+    # Resume sentinel (RESIL-01 / D-01): touch .inprogress_<fn> as a crash-leftover
+    # marker. end_func removes it before touching .<fn>; EXIT trap clears it on
+    # graceful exit. A leftover on the next run signals the function was killed
+    # mid-execution and must re-run.
+    if [[ -n "${called_fn_dir:-}" ]]; then
+        touch "$called_fn_dir/.inprogress_${1}" 2>/dev/null || true
+    fi
     log_json "INFO" "${1}" "Function started" "description=${2}"
     if declare -F ui_log_jsonl >/dev/null 2>&1; then
         ui_log_jsonl "INFO" "${1}" "Function started" "description=${2}"
@@ -1462,6 +1469,14 @@ function end_func() {
         esac
     fi
 
+    # Resume sentinel (RESIL-01 / D-01): remove .inprogress_<fn> BEFORE touching
+    # the .<fn> success checkpoint. A crash between the rm and the touch leaves
+    # .<fn> absent — the existing checkpoint guard re-enters the function on the
+    # next run. .<fn> is the source of truth; .inprogress_<fn> is a surface
+    # indicator only.
+    if [[ -n "${called_fn_dir:-}" ]]; then
+        rm -f "$called_fn_dir/.inprogress_${fn}" 2>/dev/null || true
+    fi
     touch "$called_fn_dir/.${fn}"
     local end
     end=$(date +%s)

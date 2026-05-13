@@ -141,8 +141,14 @@ function cleanup_on_exit() {
     
     # Log the interruption
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] Interrupted by signal (exit code: $exit_code)" >>"${LOGFILE:-/dev/null}"
-    
+
     exit "$exit_code"
+}
+
+# Remove stale .inprogress_<fn> sentinels on EXIT (D-02). Does not call exit/kill/print — safe to fire on every shell exit, including successful runs.
+function _cleanup_inprogress() {
+    [[ -n "${called_fn_dir:-}" ]] && rm -f "${called_fn_dir}"/.inprogress_* 2>/dev/null
+    return 0
 }
 
 function rotate_logs() {
