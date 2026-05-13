@@ -35,8 +35,8 @@ Plans:
 - [x] 01-01: `.inprogress` sentinel lifecycle in `start_func`/`end_func` with resume detection (RESIL-01)
 - [x] 01-02: Disk-full mid-run guard — periodic `df` check + `ENOSPC` trap (RESIL-02)
 - [x] 01-03: `PARALLEL_JOB_TIMEOUT_SECONDS` enforcement in `lib/parallel.sh` plus DNS timeout defaults in `reconftw.cfg` (RESIL-03, PERF-02)
-- [ ] 01-04: Gap closure — `_RECON_CLEAN_EXIT` flag gates `_cleanup_inprogress` so SIGINT/SIGTERM preserves `.inprogress_<fn>` sentinels (RESIL-01 / CR-01)
-- [ ] 01-05: Gap closure — decouple timeout enforcement from `--quiet` verbosity gate AND switch `_timeout_kill_job` to process-tree kill via `pgrep -P` walk (RESIL-03 / CR-02, CR-03)
+- [x] 01-04: Gap closure — `_RECON_CLEAN_EXIT` flag gates `_cleanup_inprogress` so SIGINT/SIGTERM preserves `.inprogress_<fn>` sentinels (RESIL-01 / CR-01)
+- [x] 01-05: Gap closure — decouple timeout enforcement from `--quiet` verbosity gate AND switch `_timeout_kill_job` to process-tree kill via `pgrep -P` walk (RESIL-03 / CR-02, CR-03)
 
 ### Phase 2: Security Quoting & Supply-Chain Hygiene
 **Goal**: Eliminate the remaining `eval` injection vector, lock down unquoted notification curl calls, make `AXIOM_EXTRA_ARGS` tokenisation explicit, and integrity-check installer bootstrappers.
