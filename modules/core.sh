@@ -1410,6 +1410,7 @@ function sendToNotify {
             run_command curl -v -i -H "Accept: application/json" -H "Content-Type: multipart/form-data" -X POST -F 'payload_json={"username": "test", "content": "hello"}' -F "file1=@${1}" "${discord_url}" 2>>"$LOGFILE" >/dev/null
         fi
         if [[ -n "${slack_channel}" ]] && [[ -n "${slack_auth}" ]]; then
+            register_secret "${slack_auth}"
             notification "Sending ${domain} data over Slack" info
             run_command curl -F "file=@${1}" -F "initial_comment=reconftw zip file" -F "channels=${slack_channel}" -H "Authorization: Bearer ${slack_auth}" https://slack.com/api/files.upload 2>>"$LOGFILE" >/dev/null
         fi
