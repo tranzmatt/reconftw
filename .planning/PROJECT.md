@@ -38,22 +38,22 @@ Run one command, get a complete recon picture of a target — passive, active, a
 - ✓ **Resilience: mid-run disk-full detection** — Boundary-only `df` check at `start_func`/`end_func` + `_abort_disk_full` with structured ENOSPC error (Phase 1 / RESIL-02 / 2026-05-13)
 - ✓ **Resilience: per-job timeout in `parallel_funcs`** — `PARALLEL_JOB_TIMEOUT_SECONDS` enforcement decoupled from verbosity gate; `_kill_tree` walks `pgrep -P` children-first so the underlying tool dies, not just the wrapper (Phase 1 / RESIL-03 / 2026-05-13)
 - ✓ **Perf: DNS timeout defaults** — `DNS_BRUTE_TIMEOUT=6h`, `DNS_RESOLVE_TIMEOUT=4h` defaults shipped in `reconftw.cfg`; `_run_dns_with_heartbeat` honors them (Phase 1 / PERF-02 / 2026-05-13)
+- ✓ **Security: `safe_count()` eval vector removed** — `safe_count()` helper deleted from `lib/common.sh` (17-line block including `eval` branch); 3 bats tests dropped; 5 doc files updated; `count_lines()`/`count_lines_stdin()` are now the canonical line-count helpers (Phase 2 / SEC-01 / 2026-05-13)
+- ✓ **Security: notification curl quoting hardened** — `sendToNotify()` in `modules/core.sh` fully-quoted (every `$1`, `$NOTIFY_CONFIG`, `$discord_url`, `$slack_channel`, `$slack_auth`, telegram URL, `-F` pair); `shellcheck --severity=error` clean (Phase 2 / SEC-02 / 2026-05-13)
+- ✓ **Security: `AXIOM_EXTRA_ARGS` array refactor** — Global `AXIOM_EXTRA_ARGS_ARR` parsed once in `reconftw.sh` (early + post-config); 21 sites in `modules/subdomains.sh` + 17 sites in `modules/web.sh` migrated to `"${AXIOM_EXTRA_ARGS_ARR[@]}"`; explicit tokenisation, no word-splitting (Phase 2 / SEC-03 / 2026-05-13)
+- ✓ **Security: installer SHA256 verification + tools.lock** — `verify_sha256()` gates rustup/uv bootstrappers (opt-in via `RUSTUP_INSTALLER_SHA256` / `UV_INSTALLER_SHA256` env vars); `tools.lock` manifest pins 11 stability-critical Go tools (nuclei, httpx, ffuf, puredns, subfinder + dalfox, katana, dnsx, naabu, interactsh-client, tlsx); `install_tools()` reads it before each `go install` (Phase 2 / SEC-04 / 2026-05-13)
+- ✓ **Fix: axiom-exec mantra path case** — `Brosck/mantra` → `brosck/mantra` at `modules/web.sh:2331`; local `install.sh:gotools` and remote `modules/web.sh:axiom-exec` paths now agree on lowercase (Phase 2 / FIX-01 / 2026-05-13)
 
 ### Active
 
 <!-- Audit-surfaced improvements being driven through the next milestone. -->
 
-- [ ] **Security: remove `eval` fallback in `safe_count()`** — Migrate remaining callers to file-path form, delete the `else` branch in `lib/common.sh:760`
-- [ ] **Security: tighten Discord/Slack curl quoting** — Quote `$discord_url`, `${slack_channel}`, filename args in `modules/core.sh:1410-1414`
-- [ ] **Security: `AXIOM_EXTRA_ARGS` array refactor** — Replace word-splitting on bare `$AXIOM_EXTRA_ARGS` with `AXIOM_EXTRA_ARGS_ARR=()` across `modules/subdomains.sh` and `modules/web.sh`
-- [ ] **Security: installer SHA256 verification** — Call `verify_sha256()` against rustup/uv bootstrappers; add re-pinned versions for stability-critical Go tools (nuclei, httpx, ffuf, puredns, subfinder)
 - [ ] **Perf: thread-count upper bounds** — Add `FFUF_THREADS_MAX`, `HTTPX_THREADS_MAX`, `DALFOX_THREADS_MAX` caps so multi-core scaling does not overwhelm targets or hit FD limits
 - [ ] **Test coverage: `parallel_funcs` batch behaviour** — Tests for barrier sync, heartbeat polling, failure counter propagation
 - [ ] **Test coverage: end-to-end module pipelines** — Mocked integration between subdomains → web → vulns to catch handoff regressions
 - [ ] **Test coverage: axiom failover path** — `axiom_disable_runtime` invocation, partial-fleet fallback, host-key auto-repair
 - [ ] **Docs: surface undocumented config knobs** — `PARALLEL_MAX_JOBS`, `ALLOW_TRANSFER`, `RAISE_ULIMIT`, `ULIMIT_TARGET`, `AXIOM_EXTRA_ARGS` semantics added to `reconftw.cfg` comments
 - [ ] **Docs: disk-space default alignment** — Resolve `MIN_DISK_SPACE_GB=2` (cfg) vs `:-5` (modes.sh) mismatch
-- [ ] **Fix: axiom-exec mantra path case** — `Brosck/mantra` → `brosck/mantra` at `modules/web.sh:2340` (local path already fixed)
 - [ ] **Scope-check unification** — Reconcile `is_in_scope_host()` (Python-backed) vs `domain_match_regex()` (ERE) so a subdomain accepted by one path is accepted by the other; cross-check tests
 
 ### Out of Scope
@@ -119,4 +119,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-13 after Phase 1 (Resilient Resume & Timeout Safety) completion*
+*Last updated: 2026-05-13 after Phase 2 (Security Quoting & Supply-Chain Hygiene) completion*
