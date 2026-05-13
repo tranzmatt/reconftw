@@ -1337,7 +1337,14 @@ function initial_setup() {
                     continue
                 fi
             else
-                msg_ok "[$dl_step/$total_dl] $key fetched"
+                # No SHA pinned for this key — integrity check skipped.
+                # For a hardened install set the corresponding env var:
+                #   GETJSWORDS_SHA256=<hash>  or  AXIOM_CONFIG_SHA256=<hash>
+                if [[ -v "download_sha256[$key]" ]]; then
+                    msg_warn "[$dl_step/$total_dl] $key fetched (no sha256 pinned — integrity unverified)"
+                else
+                    msg_ok "[$dl_step/$total_dl] $key fetched"
+                fi
             fi
         else
             msg_err "[$dl_step/$total_dl] Failed to download $key from $url"
