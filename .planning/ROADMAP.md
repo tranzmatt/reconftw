@@ -12,7 +12,7 @@ This milestone closes the 2026-03 audit gaps captured in `.planning/codebase/CON
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Resilient Resume & Timeout Safety** — `.inprogress` sentinel, disk-full mid-run detection, parallel job timeouts, DNS timeout defaults
+- [x] **Phase 1: Resilient Resume & Timeout Safety** — `.inprogress` sentinel, disk-full mid-run detection, parallel job timeouts, DNS timeout defaults *(completed 2026-05-13)*
 - [ ] **Phase 2: Security Quoting & Supply-Chain Hygiene** — Eval removal, curl quoting, `AXIOM_EXTRA_ARGS` array refactor, installer SHA256, mantra path fix
 - [ ] **Phase 3: Concurrency Caps & Scope Unification** — Per-tool thread caps, `is_in_scope_host` vs `domain_match_regex` reconciliation with cross-check tests
 - [ ] **Phase 4: Test Coverage Reinforcement** — `parallel_funcs` batch behaviour, mocked end-to-end pipeline, axiom failover
@@ -104,7 +104,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Resilient Resume & Timeout Safety | 3/5 | Gap closure in flight | - |
+| 1. Resilient Resume & Timeout Safety | 5/5 | Complete | 2026-05-13 |
 | 2. Security Quoting & Supply-Chain Hygiene | 0/3 | Not started | - |
 | 3. Concurrency Caps & Scope Unification | 0/2 | Not started | - |
 | 4. Test Coverage Reinforcement | 0/2 | Not started | - |
