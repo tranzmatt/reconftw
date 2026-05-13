@@ -465,8 +465,19 @@ parallel_funcs() {
             fi
 
             # Heartbeat while long-running jobs are executing, to avoid "stuck" perception.
+            # Loop runs when EITHER timeout enforcement is active OR verbose progress is on;
+            # snapshots fire only when verbose progress is on. Decoupled per CR-02 fix so
+            # PARALLEL_JOB_TIMEOUT_SECONDS works under --quiet (the documented CI scenario at
+            # reconftw.cfg:317).
             local hb="${PARALLEL_HEARTBEAT_SECONDS:-20}"
-            if [[ "${PARALLEL_MODE:-true}" == "true" ]] && [[ "${OUTPUT_VERBOSITY:-1}" -ge 1 ]] && [[ "$hb" =~ ^[0-9]+$ ]] && ((hb > 0)); then
+            local _to="${PARALLEL_JOB_TIMEOUT_SECONDS:-0}"
+            [[ "$_to" =~ ^[0-9]+$ ]] || _to=0
+            local _verbose_progress=false
+            [[ "${PARALLEL_MODE:-true}" == "true" ]] && [[ "${OUTPUT_VERBOSITY:-1}" -ge 1 ]] && _verbose_progress=true
+            # NB: PARALLEL_HEARTBEAT_SECONDS=0 disables the loop entirely, which also disables timeout enforcement. WR-05 documented this; resolve in Phase 5 DOCS-01 if it surfaces in practice.
+            local _loop_active=false
+            [[ "${PARALLEL_MODE:-true}" == "true" ]] && [[ "$hb" =~ ^[0-9]+$ ]] && ((hb > 0)) && _loop_active=true
+            if [[ "$_loop_active" == "true" ]] && { [[ "$_verbose_progress" == "true" ]] || (( _to > 0 )); }; then
                 local last_hb now alive hb_active_list job_dur dur_fmt queue_count batch_elapsed hb_done_count
                 last_hb=$(date +%s)
                 while :; do
@@ -478,10 +489,9 @@ parallel_funcs() {
                         if kill -0 "${batch_pids[$idx]}" 2>/dev/null; then
                             alive=1
                             job_dur=$((now - batch_starts[$idx]))
-                            # Timeout enforcement (RESIL-03 / D-11..D-14): if PARALLEL_JOB_TIMEOUT_SECONDS > 0
-                            # and the live job has exceeded it, TERM-then-KILL and persist FAIL + reason=timeout.
-                            local _to="${PARALLEL_JOB_TIMEOUT_SECONDS:-0}"
-                            if [[ "$_to" =~ ^[0-9]+$ ]] && (( _to > 0 )) && (( job_dur > _to )); then
+                            # Timeout enforcement (RESIL-03 / D-11..D-14): fires regardless of
+                            # verbosity (CR-02 fix). Uses hoisted _to from outer scope.
+                            if (( _to > 0 )) && (( job_dur > _to )); then
                                 _timeout_kill_job "${batch_pids[$idx]}" "${batch_funcs[$idx]}" "$job_dur"
                             fi
                             dur_fmt=$(format_duration "$job_dur")
@@ -495,7 +505,7 @@ parallel_funcs() {
                         fi
                     done
                     ((alive == 0)) && break
-                    if ((now - last_hb >= hb)); then
+                    if [[ "$_verbose_progress" == "true" ]] && ((now - last_hb >= hb)); then
                         queue_count=$((total_funcs - queued_count))
                         batch_elapsed=$((now - batch_start_ts))
                         _parallel_snapshot "${hb_active_list:-none}" "$done_list" "$queue_count" "$hb_done_count" "${#batch_pids[@]}" "$batch_elapsed"
@@ -575,8 +585,20 @@ parallel_funcs() {
             _parallel_snapshot "$active_list" "$done_list" "$queue_count" "0" "${#batch_pids[@]}" "0"
         fi
 
+        # Heartbeat while long-running jobs are executing, to avoid "stuck" perception.
+        # Loop runs when EITHER timeout enforcement is active OR verbose progress is on;
+        # snapshots fire only when verbose progress is on. Decoupled per CR-02 fix so
+        # PARALLEL_JOB_TIMEOUT_SECONDS works under --quiet (the documented CI scenario at
+        # reconftw.cfg:317).
         local hb="${PARALLEL_HEARTBEAT_SECONDS:-20}"
-        if [[ "${PARALLEL_MODE:-true}" == "true" ]] && [[ "${OUTPUT_VERBOSITY:-1}" -ge 1 ]] && [[ "$hb" =~ ^[0-9]+$ ]] && ((hb > 0)); then
+        local _to="${PARALLEL_JOB_TIMEOUT_SECONDS:-0}"
+        [[ "$_to" =~ ^[0-9]+$ ]] || _to=0
+        local _verbose_progress=false
+        [[ "${PARALLEL_MODE:-true}" == "true" ]] && [[ "${OUTPUT_VERBOSITY:-1}" -ge 1 ]] && _verbose_progress=true
+        # NB: PARALLEL_HEARTBEAT_SECONDS=0 disables the loop entirely, which also disables timeout enforcement. WR-05 documented this; resolve in Phase 5 DOCS-01 if it surfaces in practice.
+        local _loop_active=false
+        [[ "${PARALLEL_MODE:-true}" == "true" ]] && [[ "$hb" =~ ^[0-9]+$ ]] && ((hb > 0)) && _loop_active=true
+        if [[ "$_loop_active" == "true" ]] && { [[ "$_verbose_progress" == "true" ]] || (( _to > 0 )); }; then
             local last_hb now alive hb_active_list job_dur dur_fmt queue_count batch_elapsed hb_done_count
             last_hb=$(date +%s)
             while :; do
@@ -588,10 +610,9 @@ parallel_funcs() {
                     if kill -0 "${batch_pids[$idx]}" 2>/dev/null; then
                         alive=1
                         job_dur=$((now - batch_starts[$idx]))
-                        # Timeout enforcement (RESIL-03 / D-11..D-14): if PARALLEL_JOB_TIMEOUT_SECONDS > 0
-                        # and the live job has exceeded it, TERM-then-KILL and persist FAIL + reason=timeout.
-                        local _to="${PARALLEL_JOB_TIMEOUT_SECONDS:-0}"
-                        if [[ "$_to" =~ ^[0-9]+$ ]] && (( _to > 0 )) && (( job_dur > _to )); then
+                        # Timeout enforcement (RESIL-03 / D-11..D-14): fires regardless of
+                        # verbosity (CR-02 fix). Uses hoisted _to from outer scope.
+                        if (( _to > 0 )) && (( job_dur > _to )); then
                             _timeout_kill_job "${batch_pids[$idx]}" "${batch_funcs[$idx]}" "$job_dur"
                         fi
                         dur_fmt=$(format_duration "$job_dur")
@@ -605,7 +626,7 @@ parallel_funcs() {
                     fi
                 done
                 ((alive == 0)) && break
-                if ((now - last_hb >= hb)); then
+                if [[ "$_verbose_progress" == "true" ]] && ((now - last_hb >= hb)); then
                     queue_count=$((total_funcs - queued_count))
                     batch_elapsed=$((now - batch_start_ts))
                     _parallel_snapshot "${hb_active_list:-none}" "$done_list" "$queue_count" "$hb_done_count" "${#batch_pids[@]}" "$batch_elapsed"
